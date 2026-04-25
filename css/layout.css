@@ -13,7 +13,9 @@
 	--cl-sidebar-w: 260px;
 	--cl-sidebar-w-collapsed: 72px;
 	--cl-header-h: 50px;
-	--cl-sidebar-gap: 12px;          /* outer breathing room around sidebar */
+	--cl-sidebar-gap: 0px;           /* flush against viewport — set >0 to float */
+	--cl-content-gap: 12px;          /* breathing room between sidebar and content */
+	--cl-bottom-gap: 8px;            /* matches NC's #content-vue margin-bottom */
 
 	/* ------------ Colors ------------ */
 	--cl-bg:          #f3f4f8;
@@ -27,7 +29,7 @@
 	/* ------------ Shape ------------ */
 	--cl-radius:      14px;
 	--cl-radius-sm:   10px;
-	--cl-radius-lg:   18px;
+	--cl-radius-lg:   16px;          /* matches NC's #content-vue border-radius */
 	--cl-shadow:      0 6px 24px rgba(15, 23, 42, 0.06);
 	--cl-shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.04);
 
@@ -71,31 +73,32 @@ body.cl-applied header .app-menu-main {
 }
 
 /* ----------------------------------------------------------------------------
-   2. Body / main content — make room for the sidebar
-   -------------------------------------------------------------------------- */
+   2. Main content — make room for the sidebar
+   --------------------------------------------------------------------------
+   NC 29+ uses `#content-vue` as the outermost content wrapper, positioned
+   `fixed; left: 0; width: 100%`. Adding `margin-left` shifts it right but
+   the explicit width keeps it full-viewport-wide, so it overflows by
+   exactly the margin amount, and NC's in-app sidebar (e.g. Files
+   navigation) ends up partially clipped behind ours.
 
-body {
-	background: var(--cl-bg) !important;
-}
+   Correct fix: override `left` directly and pin `right: 0`, so the wrapper
+   genuinely shrinks. We deliberately do NOT touch `.app-content` or
+   `main#content` — those are *inside* `#content-vue` and would get
+   double-shifted. We also do NOT override any background or border-radius,
+   so NC's theme stays intact. */
 
-/* Push main content to the right of the sidebar.
-   The padding shrinks when the sidebar is collapsed.
-   Targets the main wrapper across NC25–32 variants. */
 #content,
-#content-vue,
-.app-content,
-main#content {
-	margin-left: calc(var(--cl-sidebar-w) + var(--cl-sidebar-gap)) !important;
-	transition: margin-left var(--cl-dur) var(--cl-ease);
-	background: var(--cl-bg) !important;
-	border-radius: var(--cl-radius-lg) 0 0 0;
+#content-vue {
+	left: calc(var(--cl-sidebar-w) + var(--cl-sidebar-gap) + var(--cl-content-gap)) !important;
+	right: 0 !important;
+	width: auto !important;
+	margin-left: 0 !important;
+	transition: left var(--cl-dur) var(--cl-ease);
 }
 
 body.cl-sidebar-collapsed #content,
-body.cl-sidebar-collapsed #content-vue,
-body.cl-sidebar-collapsed .app-content,
-body.cl-sidebar-collapsed main#content {
-	margin-left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap)) !important;
+body.cl-sidebar-collapsed #content-vue {
+	left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap) + var(--cl-content-gap)) !important;
 }
 
 /* ----------------------------------------------------------------------------
@@ -104,14 +107,16 @@ body.cl-sidebar-collapsed main#content {
 
 .cl-sidebar {
 	position: fixed;
-	top: calc(var(--cl-header-h) + var(--cl-sidebar-gap));
-	left: var(--cl-sidebar-gap);
-	bottom: var(--cl-sidebar-gap);
+	top: var(--cl-header-h);
+	left: 0;
+	bottom: var(--cl-bottom-gap);
 	width: var(--cl-sidebar-w);
 	background: var(--cl-sidebar-bg);
-	border: 1px solid var(--cl-border);
-	border-radius: var(--cl-radius-lg);
-	box-shadow: var(--cl-shadow);
+	border-right: 1px solid var(--cl-border);
+	/* Round only the right side so the sidebar mirrors NC's #content-vue
+	   top-left radius. Top-right + bottom-right rounded; left edges stay
+	   square and flush with the viewport. */
+	border-radius: 0 var(--cl-radius-lg) var(--cl-radius-lg) 0;
 	z-index: 1500;
 	display: flex;
 	flex-direction: column;
@@ -126,11 +131,12 @@ body.cl-sidebar-collapsed .cl-sidebar {
 	width: var(--cl-sidebar-w-collapsed);
 }
 
-/* Hover-expand: when collapsed, hovering temporarily expands without
-   changing the persisted state. */
+/* Hover-expand when collapsed: temporary visual expansion only, not
+   persisted. The shadow makes the floating panel readable on top of the
+   adjacent in-app navigation. */
 body.cl-sidebar-collapsed .cl-sidebar:hover {
 	width: var(--cl-sidebar-w);
-	box-shadow: 0 12px 36px rgba(15, 23, 42, 0.10);
+	box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
 }
 
 /* ----------------------------------------------------------------------------
@@ -326,10 +332,8 @@ body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item__label {
 
 @media (max-width: 1024px) {
 	#content,
-	#content-vue,
-	.app-content,
-	main#content {
-		margin-left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap)) !important;
+	#content-vue {
+		left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap) + var(--cl-content-gap)) !important;
 	}
 	body:not(.cl-sidebar-collapsed) .cl-sidebar {
 		/* Auto-collapse on tablets */
@@ -342,11 +346,8 @@ body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item__label {
 
 @media (max-width: 640px) {
 	#content,
-	#content-vue,
-	.app-content,
-	main#content {
-		margin-left: 0 !important;
-		border-radius: 0;
+	#content-vue {
+		left: 0 !important;
 	}
 	.cl-sidebar {
 		left: 0;
