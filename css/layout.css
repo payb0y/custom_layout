@@ -1,0 +1,387 @@
+/* ============================================================================
+   Custom Layout — modern SaaS-style sidebar for Nextcloud 32
+   ============================================================================
+   This file is loaded globally via \OCP\Util::addStyle(). It re-skins the
+   default Nextcloud chrome:
+     - hides the horizontal app menu in the top header
+     - reserves space on the left for a fixed sidebar (built by layout.js)
+     - shifts the main content area to the right of the sidebar
+   ========================================================================== */
+
+:root {
+	/* ------------ Layout ------------ */
+	--cl-sidebar-w: 260px;
+	--cl-sidebar-w-collapsed: 72px;
+	--cl-header-h: 50px;
+	--cl-sidebar-gap: 12px;          /* outer breathing room around sidebar */
+
+	/* ------------ Colors ------------ */
+	--cl-bg:          #f3f4f8;
+	--cl-sidebar-bg:  #ffffff;
+	--cl-active-bg:   #f8dff5;
+	--cl-active-fg:   #c026a8;
+	--cl-text:        #0b1026;
+	--cl-text-muted:  #7b8497;
+	--cl-border:      #e6e8ef;
+
+	/* ------------ Shape ------------ */
+	--cl-radius:      14px;
+	--cl-radius-sm:   10px;
+	--cl-radius-lg:   18px;
+	--cl-shadow:      0 6px 24px rgba(15, 23, 42, 0.06);
+	--cl-shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.04);
+
+	/* ------------ Motion ------------ */
+	--cl-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--cl-dur:  220ms;
+}
+
+/* ----------------------------------------------------------------------------
+   1. Header — hide horizontal app menu, leave the rest to Nextcloud's theme
+   -------------------------------------------------------------------------- */
+
+#header {
+	height: var(--cl-header-h);
+}
+
+/* Kill the default app menu — our sidebar takes its place */
+#appmenu,
+#header nav#navigation,
+#header .app-menu,
+#header .app-menu-main {
+	display: none !important;
+}
+
+/* Logo / app name area: keep visible but compact */
+#header .header-left,
+#header .header-start {
+	padding-left: 12px;
+}
+
+/* Right-side icons (search, notifications, contacts menu, user menu) stay */
+#header .header-right,
+#header .header-end {
+	gap: 4px;
+}
+
+/* ----------------------------------------------------------------------------
+   2. Body / main content — make room for the sidebar
+   -------------------------------------------------------------------------- */
+
+body {
+	background: var(--cl-bg) !important;
+}
+
+/* Push main content to the right of the sidebar.
+   The padding shrinks when the sidebar is collapsed.
+   Targets the main wrapper across NC25–32 variants. */
+#content,
+#content-vue,
+.app-content,
+main#content {
+	margin-left: calc(var(--cl-sidebar-w) + var(--cl-sidebar-gap)) !important;
+	transition: margin-left var(--cl-dur) var(--cl-ease);
+	background: var(--cl-bg) !important;
+	border-radius: var(--cl-radius-lg) 0 0 0;
+}
+
+body.cl-sidebar-collapsed #content,
+body.cl-sidebar-collapsed #content-vue,
+body.cl-sidebar-collapsed .app-content,
+body.cl-sidebar-collapsed main#content {
+	margin-left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap)) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   3. Sidebar shell
+   -------------------------------------------------------------------------- */
+
+.cl-sidebar {
+	position: fixed;
+	top: calc(var(--cl-header-h) + var(--cl-sidebar-gap));
+	left: var(--cl-sidebar-gap);
+	bottom: var(--cl-sidebar-gap);
+	width: var(--cl-sidebar-w);
+	background: var(--cl-sidebar-bg);
+	border: 1px solid var(--cl-border);
+	border-radius: var(--cl-radius-lg);
+	box-shadow: var(--cl-shadow);
+	z-index: 1500;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	transition: width var(--cl-dur) var(--cl-ease),
+	            transform var(--cl-dur) var(--cl-ease);
+	font-family: inherit;
+	color: var(--cl-text);
+}
+
+body.cl-sidebar-collapsed .cl-sidebar {
+	width: var(--cl-sidebar-w-collapsed);
+}
+
+/* Hover-expand: when collapsed, hovering temporarily expands without
+   changing the persisted state. */
+body.cl-sidebar-collapsed .cl-sidebar:hover {
+	width: var(--cl-sidebar-w);
+	box-shadow: 0 12px 36px rgba(15, 23, 42, 0.10);
+}
+
+/* ----------------------------------------------------------------------------
+   4. Sidebar — toggle bar (top)
+   -------------------------------------------------------------------------- */
+
+.cl-sidebar__toggle-bar {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	padding: 10px 12px 4px;
+}
+
+.cl-sidebar__toggle {
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+	width: 28px;
+	height: 28px;
+	border-radius: 8px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--cl-text-muted);
+	transition: background var(--cl-dur) var(--cl-ease),
+	            color var(--cl-dur) var(--cl-ease),
+	            transform var(--cl-dur) var(--cl-ease);
+}
+.cl-sidebar__toggle:hover {
+	background: var(--cl-bg);
+	color: var(--cl-text);
+}
+.cl-sidebar__toggle svg {
+	width: 16px;
+	height: 16px;
+}
+body.cl-sidebar-collapsed .cl-sidebar__toggle {
+	transform: rotate(180deg);
+}
+
+/* ----------------------------------------------------------------------------
+   5. Sidebar — scroll area + groups
+   -------------------------------------------------------------------------- */
+
+.cl-sidebar__scroll {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 4px 12px 12px;
+	scrollbar-width: thin;
+	scrollbar-color: var(--cl-border) transparent;
+}
+.cl-sidebar__scroll::-webkit-scrollbar { width: 6px; }
+.cl-sidebar__scroll::-webkit-scrollbar-thumb {
+	background: var(--cl-border);
+	border-radius: 6px;
+}
+
+.cl-group {
+	margin-top: 14px;
+}
+.cl-group:first-child {
+	margin-top: 4px;
+}
+.cl-group__title {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	color: var(--cl-text-muted);
+	text-transform: uppercase;
+	padding: 6px 10px;
+	white-space: nowrap;
+	transition: opacity var(--cl-dur) var(--cl-ease);
+}
+
+/* In collapsed state, replace the title with a thin divider line */
+body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-group__title {
+	opacity: 0;
+	height: 1px;
+	padding: 0;
+	margin: 14px 16px 6px;
+	background: var(--cl-border);
+	overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   6. Sidebar — items
+   -------------------------------------------------------------------------- */
+
+.cl-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 10px;
+	margin: 2px 0;
+	border-radius: var(--cl-radius-sm);
+	color: var(--cl-text);
+	text-decoration: none !important;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	transition: background var(--cl-dur) var(--cl-ease),
+	            color var(--cl-dur) var(--cl-ease);
+}
+.cl-item:hover {
+	background: var(--cl-bg);
+	color: var(--cl-text);
+}
+.cl-item.cl-item--active {
+	background: var(--cl-active-bg);
+	color: var(--cl-active-fg);
+}
+.cl-item.cl-item--active .cl-item__icon {
+	color: var(--cl-active-fg);
+}
+
+.cl-item__icon {
+	flex: 0 0 24px;
+	width: 24px;
+	height: 24px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--cl-text-muted);
+}
+.cl-item__icon img,
+.cl-item__icon svg {
+	width: 20px;
+	height: 20px;
+	display: block;
+}
+/* Most NC app icons are SVG masks served as <img> — recolor via filter for
+   inactive state, leave active state at full color. */
+.cl-item__icon img {
+	opacity: 0.78;
+	transition: opacity var(--cl-dur) var(--cl-ease),
+	            filter   var(--cl-dur) var(--cl-ease);
+}
+.cl-item:hover .cl-item__icon img {
+	opacity: 1;
+}
+.cl-item--active .cl-item__icon img {
+	opacity: 1;
+	/* Tint the icon toward our active magenta. Falls back gracefully if the
+	   icon is a full-color raster — it just won't be tinted. */
+	filter: brightness(0.6) sepia(1) saturate(8) hue-rotate(265deg);
+}
+
+.cl-item__label {
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	transition: opacity calc(var(--cl-dur) * 0.8) var(--cl-ease);
+}
+
+/* When collapsed (and not hovered), hide labels and center icons */
+body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item {
+	justify-content: center;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item__label {
+	opacity: 0;
+	width: 0;
+	flex: 0 0 0;
+	overflow: hidden;
+}
+
+/* ----------------------------------------------------------------------------
+   7. Sidebar — footer ("More apps")
+   -------------------------------------------------------------------------- */
+
+.cl-sidebar__footer {
+	flex: 0 0 auto;
+	border-top: 1px solid var(--cl-border);
+	padding: 8px 12px;
+}
+.cl-sidebar__footer .cl-item {
+	color: var(--cl-text-muted);
+}
+.cl-sidebar__footer .cl-item:hover {
+	color: var(--cl-text);
+}
+
+/* ----------------------------------------------------------------------------
+   8. Mobile overlay behavior
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+	#content,
+	#content-vue,
+	.app-content,
+	main#content {
+		margin-left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap)) !important;
+	}
+	body:not(.cl-sidebar-collapsed) .cl-sidebar {
+		/* Auto-collapse on tablets */
+		width: var(--cl-sidebar-w-collapsed);
+	}
+	body:not(.cl-sidebar-collapsed) .cl-sidebar:hover {
+		width: var(--cl-sidebar-w);
+	}
+}
+
+@media (max-width: 640px) {
+	#content,
+	#content-vue,
+	.app-content,
+	main#content {
+		margin-left: 0 !important;
+		border-radius: 0;
+	}
+	.cl-sidebar {
+		left: 0;
+		top: var(--cl-header-h);
+		bottom: 0;
+		border-radius: 0;
+		border-left: 0;
+		transform: translateX(-100%);
+	}
+	body.cl-sidebar-mobile-open .cl-sidebar {
+		transform: translateX(0);
+		width: var(--cl-sidebar-w);
+	}
+}
+
+/* ----------------------------------------------------------------------------
+   9. Dark mode — minimal fallback so the sidebar isn't unreadable
+   -------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--cl-bg:         #1b1d24;
+		--cl-sidebar-bg: #23252e;
+		--cl-active-bg:  #3a1f3b;
+		--cl-active-fg:  #ff8de4;
+		--cl-text:       #ececf1;
+		--cl-text-muted: #9aa0b4;
+		--cl-border:     #2e3140;
+		--cl-shadow:     0 6px 24px rgba(0, 0, 0, 0.35);
+	}
+	.cl-item--active .cl-item__icon img {
+		filter: brightness(0.9) sepia(1) saturate(6) hue-rotate(280deg);
+	}
+}
+
+/* Respect Nextcloud's explicit dark theme class as well */
+body[data-theme-dark],
+body[data-themes*="dark"] {
+	--cl-bg:         #1b1d24;
+	--cl-sidebar-bg: #23252e;
+	--cl-active-bg:  #3a1f3b;
+	--cl-active-fg:  #ff8de4;
+	--cl-text:       #ececf1;
+	--cl-text-muted: #9aa0b4;
+	--cl-border:     #2e3140;
+	--cl-shadow:     0 6px 24px rgba(0, 0, 0, 0.35);
+}
