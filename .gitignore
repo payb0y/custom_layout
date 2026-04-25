@@ -1,0 +1,17 @@
+# Node / npm scratch (only used for local Playwright tests)
+node_modules/
+package.json
+package-lock.json
+
+# Test output
+test-results/
+playwright-report/
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~

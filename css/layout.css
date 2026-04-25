@@ -44,11 +44,17 @@
 	height: var(--cl-header-h);
 }
 
-/* Kill the default app menu — our sidebar takes its place */
-#appmenu,
-#header nav#navigation,
-#header .app-menu,
-#header .app-menu-main {
+/* Kill the default app menu — but only AFTER our sidebar has cloned its items.
+   NC 32's AppMenu Vue component measures container width on mount; if we hide
+   the nav at that moment Vue thinks there's no room and shoves every entry
+   into the overflow popup, leaving the visible <ul> empty. So we wait for
+   our JS to set body.cl-applied before hiding. */
+body.cl-applied #appmenu,
+body.cl-applied #header nav#navigation,
+body.cl-applied #header .app-menu,
+body.cl-applied #header .app-menu-main,
+body.cl-applied header nav.app-menu,
+body.cl-applied header .app-menu-main {
 	display: none !important;
 }
 
@@ -258,21 +264,24 @@ body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-group__title {
 	height: 20px;
 	display: block;
 }
-/* Most NC app icons are SVG masks served as <img> — recolor via filter for
-   inactive state, leave active state at full color. */
+/* NC ships most app icons as WHITE SVGs (designed for the dark NC header).
+   On our light sidebar they would be invisible, so flatten to dark grey via
+   filter. The active state retints to our magenta accent. Multicolour icons
+   (e.g. Dashboard) lose their hue but become readable, which we accept as a
+   reasonable trade-off for legibility. */
 .cl-item__icon img {
-	opacity: 0.78;
-	transition: opacity var(--cl-dur) var(--cl-ease),
-	            filter   var(--cl-dur) var(--cl-ease);
+	filter: brightness(0) saturate(100%) invert(48%) sepia(8%) saturate(360%)
+	        hue-rotate(195deg) brightness(95%) contrast(85%);
+	transition: filter var(--cl-dur) var(--cl-ease);
 }
 .cl-item:hover .cl-item__icon img {
-	opacity: 1;
+	filter: brightness(0) saturate(100%) invert(8%) sepia(15%) saturate(2400%)
+	        hue-rotate(220deg) brightness(95%) contrast(95%);
 }
 .cl-item--active .cl-item__icon img {
-	opacity: 1;
-	/* Tint the icon toward our active magenta. Falls back gracefully if the
-	   icon is a full-color raster — it just won't be tinted. */
-	filter: brightness(0.6) sepia(1) saturate(8) hue-rotate(265deg);
+	/* Tint to active magenta (#c026a8). */
+	filter: brightness(0) saturate(100%) invert(28%) sepia(89%) saturate(2477%)
+	        hue-rotate(287deg) brightness(95%) contrast(98%);
 }
 
 .cl-item__label {

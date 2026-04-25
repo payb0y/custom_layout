@@ -40,8 +40,10 @@
 
 	const SVG_NS = 'http://www.w3.org/2000/svg';
 
-	/** Selectors tried, in order, to find the source app menu. */
+	/** Selectors tried, in order, to find the source app menu (NC 25–32). */
 	const APPMENU_SELECTORS = [
+		'header nav.app-menu .app-menu-entry > a',
+		'header nav.app-menu li > a',
 		'#appmenu li[data-app-id] > a',
 		'#appmenu .app-menu-entry > a',
 		'#appmenu ul > li > a',
@@ -51,6 +53,8 @@
 
 	/** Selectors for any "more apps" overflow trigger. */
 	const MORE_APPS_SELECTORS = [
+		'header nav.app-menu .app-menu-entry--more a',
+		'header .app-menu-more a',
 		'#header .app-menu-more a',
 		'#header [data-id="more-apps"] a',
 		'a[href$="/settings/apps"]',
@@ -142,7 +146,11 @@
 		if (link.classList.contains('active')) return true;
 		if (link.getAttribute('aria-current')) return true;
 		const li = link.closest('li');
-		if (li && li.classList.contains('active')) return true;
+		if (li) {
+			// NC 25-32: parent <li> carries app-menu-entry--active when current.
+			if (li.classList.contains('active')) return true;
+			if (li.classList.contains('app-menu-entry--active')) return true;
+		}
 
 		const href = link.getAttribute('href');
 		if (href && location.pathname.indexOf(href) === 0) return true;
@@ -350,6 +358,11 @@
 			}
 			footerEl.appendChild(item);
 		}
+
+		// Tell the CSS it is safe to hide the original menu now that we've
+		// cloned its items. Doing this earlier breaks Vue's responsive layout
+		// measurement and empties the menu into the overflow popup.
+		document.body.classList.add('cl-applied');
 
 		return true;
 	}
