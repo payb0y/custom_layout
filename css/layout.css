@@ -364,28 +364,17 @@ body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item__label {
 }
 
 /* ----------------------------------------------------------------------------
-   9. Dark mode — minimal fallback so the sidebar isn't unreadable
-   -------------------------------------------------------------------------- */
+   9. Dark mode — follow Nextcloud's chosen theme, NOT the OS preference
+   --------------------------------------------------------------------------
+   We deliberately do NOT use `@media (prefers-color-scheme: dark)` here:
+   that would dark-ify our sidebar whenever the user's OS is dark, even when
+   they have explicitly chosen the light theme in Nextcloud. Instead we
+   only react to NC's own `data-theme-*` attributes. */
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--cl-bg:         #1b1d24;
-		--cl-sidebar-bg: #23252e;
-		--cl-active-bg:  #3a1f3b;
-		--cl-active-fg:  #ff8de4;
-		--cl-text:       #ececf1;
-		--cl-text-muted: #9aa0b4;
-		--cl-border:     #2e3140;
-		--cl-shadow:     0 6px 24px rgba(0, 0, 0, 0.35);
-	}
-	.cl-item--active .cl-item__icon img {
-		filter: brightness(0.9) sepia(1) saturate(6) hue-rotate(280deg);
-	}
-}
-
-/* Respect Nextcloud's explicit dark theme class as well */
 body[data-theme-dark],
-body[data-themes*="dark"] {
+body[data-theme-dark-highcontrast],
+body[data-themes~="dark"],
+body[data-themes~="dark-highcontrast"] {
 	--cl-bg:         #1b1d24;
 	--cl-sidebar-bg: #23252e;
 	--cl-active-bg:  #3a1f3b;
@@ -394,4 +383,9 @@ body[data-themes*="dark"] {
 	--cl-text-muted: #9aa0b4;
 	--cl-border:     #2e3140;
 	--cl-shadow:     0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+body[data-theme-dark] .cl-item--active .cl-item__icon img,
+body[data-themes~="dark"] .cl-item--active .cl-item__icon img {
+	filter: brightness(0.9) sepia(1) saturate(6) hue-rotate(280deg);
 }
