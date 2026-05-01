@@ -11,7 +11,7 @@
 :root {
 	/* ------------ Layout ------------ */
 	--cl-sidebar-w: 260px;
-	--cl-sidebar-w-collapsed: 72px;
+	--cl-sidebar-w-collapsed: 88px;
 	--cl-header-h: 50px;
 	--cl-sidebar-gap: 0px;           /* flush against viewport — set >0 to float */
 	--cl-content-gap: 12px;          /* breathing room between sidebar and content */
@@ -131,14 +131,6 @@ body.cl-sidebar-collapsed .cl-sidebar {
 	width: var(--cl-sidebar-w-collapsed);
 }
 
-/* Hover-expand when collapsed: temporary visual expansion only, not
-   persisted. The shadow makes the floating panel readable on top of the
-   adjacent in-app navigation. */
-body.cl-sidebar-collapsed .cl-sidebar:hover {
-	width: var(--cl-sidebar-w);
-	box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
-}
-
 /* ----------------------------------------------------------------------------
    4. Sidebar — toggle bar (top)
    -------------------------------------------------------------------------- */
@@ -189,6 +181,13 @@ body.cl-sidebar-collapsed .cl-sidebar__toggle {
 	scrollbar-width: thin;
 	scrollbar-color: var(--cl-border) transparent;
 }
+
+/* In collapsed mode the rail is narrow — shrink horizontal scroll padding so
+   short labels like "Dashboard" fit on a single line under the icon. */
+body.cl-sidebar-collapsed .cl-sidebar__scroll {
+	padding-left: 4px;
+	padding-right: 4px;
+}
 .cl-sidebar__scroll::-webkit-scrollbar { width: 6px; }
 .cl-sidebar__scroll::-webkit-scrollbar-thumb {
 	background: var(--cl-border);
@@ -213,7 +212,7 @@ body.cl-sidebar-collapsed .cl-sidebar__toggle {
 }
 
 /* In collapsed state, replace the title with a thin divider line */
-body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-group__title {
+body.cl-sidebar-collapsed .cl-group__title {
 	opacity: 0;
 	height: 1px;
 	padding: 0;
@@ -297,17 +296,35 @@ body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-group__title {
 	transition: opacity calc(var(--cl-dur) * 0.8) var(--cl-ease);
 }
 
-/* When collapsed (and not hovered), hide labels and center icons */
-body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item {
+/* Collapsed mode — Microsoft Teams-style "icon on top, label below".
+   Items become small tiles, the rail width is enough to fit short labels
+   on one or two lines. No hover-expand: the collapsed rail is the final
+   collapsed state, not a transient one. */
+body.cl-sidebar-collapsed .cl-item {
+	flex-direction: column;
 	justify-content: center;
-	padding-left: 8px;
-	padding-right: 8px;
+	align-items: stretch;
+	gap: 4px;
+	padding: 8px 4px;
+	text-align: center;
+	white-space: normal;
 }
-body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item__label {
-	opacity: 0;
-	width: 0;
-	flex: 0 0 0;
+body.cl-sidebar-collapsed .cl-item__icon {
+	align-self: center;
+}
+body.cl-sidebar-collapsed .cl-item__label {
+	flex: 0 0 auto;
+	width: 100%;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.15;
+	text-align: center;
+	white-space: normal;
+	overflow-wrap: anywhere;
 	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
 }
 
 /* ----------------------------------------------------------------------------
@@ -336,11 +353,46 @@ body.cl-sidebar-collapsed .cl-sidebar:not(:hover) .cl-item__label {
 		left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap) + var(--cl-content-gap)) !important;
 	}
 	body:not(.cl-sidebar-collapsed) .cl-sidebar {
-		/* Auto-collapse on tablets */
+		/* Auto-collapse to the icon+label rail on tablets */
 		width: var(--cl-sidebar-w-collapsed);
 	}
-	body:not(.cl-sidebar-collapsed) .cl-sidebar:hover {
-		width: var(--cl-sidebar-w);
+	body:not(.cl-sidebar-collapsed) .cl-sidebar__scroll {
+		padding-left: 4px;
+		padding-right: 4px;
+	}
+	body:not(.cl-sidebar-collapsed) .cl-item {
+		flex-direction: column;
+		justify-content: center;
+		align-items: stretch;
+		gap: 4px;
+		padding: 8px 4px;
+		text-align: center;
+		white-space: normal;
+	}
+	body:not(.cl-sidebar-collapsed) .cl-item__icon {
+		align-self: center;
+	}
+	body:not(.cl-sidebar-collapsed) .cl-item__label {
+		flex: 0 0 auto;
+		width: 100%;
+		font-size: 11px;
+		font-weight: 500;
+		line-height: 1.15;
+		text-align: center;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+	}
+	body:not(.cl-sidebar-collapsed) .cl-group__title {
+		opacity: 0;
+		height: 1px;
+		padding: 0;
+		margin: 14px 16px 6px;
+		background: var(--cl-border);
+		overflow: hidden;
 	}
 }
 
