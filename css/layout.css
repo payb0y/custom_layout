@@ -196,9 +196,13 @@ body.cl-sidebar-collapsed .cl-sidebar__scroll {
 
 .cl-group {
 	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid var(--cl-border);
 }
 .cl-group:first-child {
 	margin-top: 4px;
+	padding-top: 0;
+	border-top: 0;
 }
 .cl-group__title {
 	font-size: 11px;
@@ -211,14 +215,10 @@ body.cl-sidebar-collapsed .cl-sidebar__scroll {
 	transition: opacity var(--cl-dur) var(--cl-ease);
 }
 
-/* In collapsed state, replace the title with a thin divider line */
+/* Collapsed mode: hide the title entirely — the .cl-group border-top above
+   already provides visual separation between sections, no need to double up. */
 body.cl-sidebar-collapsed .cl-group__title {
-	opacity: 0;
-	height: 1px;
-	padding: 0;
-	margin: 14px 16px 6px;
-	background: var(--cl-border);
-	overflow: hidden;
+	display: none;
 }
 
 /* ----------------------------------------------------------------------------
@@ -387,12 +387,7 @@ body.cl-sidebar-collapsed .cl-item__label {
 		-webkit-box-orient: vertical;
 	}
 	body:not(.cl-sidebar-collapsed) .cl-group__title {
-		opacity: 0;
-		height: 1px;
-		padding: 0;
-		margin: 14px 16px 6px;
-		background: var(--cl-border);
-		overflow: hidden;
+		display: none;
 	}
 }
 
