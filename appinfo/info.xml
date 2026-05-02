@@ -25,6 +25,6 @@ Compatible with Nextcloud 32.x.
 	<bugs>https://example.com/custom_layout/issues</bugs>
 	<dependencies>
 		<php min-version="8.0"/>
-		<nextcloud min-version="25" max-version="32"/>
+		<nextcloud min-version="25" max-version="34"/>
 	</dependencies>
 </info>
