@@ -254,6 +254,41 @@
     sidebarEl.appendChild(footerEl);
 
     document.body.appendChild(sidebarEl);
+
+    ensureMobileTrigger();
+  }
+
+  // Mobile hamburger + backdrop. The CSS hides the sidebar (translateX(-100%))
+  // at <=640px and only restores it when body.cl-sidebar-mobile-open is set.
+  // Without this trigger there is no way to open it on phones.
+  function ensureMobileTrigger() {
+    if (document.querySelector(".cl-mobile-trigger")) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cl-mobile-trigger";
+    btn.setAttribute("aria-label", "Open navigation");
+    btn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>';
+    btn.addEventListener("click", () => {
+      document.body.classList.toggle("cl-sidebar-mobile-open");
+    });
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "cl-mobile-backdrop";
+    backdrop.addEventListener("click", () => {
+      document.body.classList.remove("cl-sidebar-mobile-open");
+    });
+
+    document.body.appendChild(btn);
+    document.body.appendChild(backdrop);
+
+    // Auto-close after navigating to an app on mobile.
+    sidebarEl.addEventListener("click", (e) => {
+      if (e.target.closest(".cl-item")) {
+        document.body.classList.remove("cl-sidebar-mobile-open");
+      }
+    });
   }
 
   function buildItem(link) {
