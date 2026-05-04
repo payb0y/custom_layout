@@ -52,18 +52,22 @@
 	height: var(--cl-header-h);
 }
 
-/* Kill the default app menu — but only AFTER our sidebar has cloned its items.
-   NC 32+'s AppMenu Vue component measures container width on mount; if we hide
-   the nav at that moment Vue thinks there's no room and shoves every entry
-   into the overflow popup, leaving the visible <ul> empty. So we wait for
-   our JS to set body.cl-applied before hiding. */
-body.cl-applied #appmenu,
-body.cl-applied #header nav#navigation,
-body.cl-applied #header .app-menu,
-body.cl-applied #header .app-menu-main,
-body.cl-applied header nav.app-menu,
-body.cl-applied header .app-menu-main {
-	display: none !important;
+/* Kill the default app menu from the very first paint. We use
+   `visibility: hidden` (NOT `display: none`) so the menu's box stays in
+   layout: NC 32+'s AppMenu Vue component measures its container width on
+   mount, and a collapsed `display: none` box reports zero width, which
+   Vue interprets as "no room" and shoves every entry into the overflow
+   popup. `visibility: hidden` preserves the geometry, so Vue measures
+   correctly while the menu paints nothing. Applying this rule
+   unconditionally (no JS-set gate) avoids the flash of the default
+   navbar that would otherwise appear on every page load. */
+#appmenu,
+#header nav#navigation,
+#header .app-menu,
+#header .app-menu-main,
+header nav.app-menu,
+header .app-menu-main {
+	visibility: hidden !important;
 }
 
 /* Logo / app name area: keep visible but compact */

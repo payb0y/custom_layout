@@ -425,11 +425,6 @@
       footerEl.appendChild(item);
     }
 
-    // Tell the CSS it is safe to hide the original menu now that we've
-    // cloned its items. Doing this earlier breaks Vue's responsive layout
-    // measurement and empties the menu into the overflow popup.
-    document.body.classList.add("cl-applied");
-
     return true;
   }
 
