@@ -1,11 +1,17 @@
 /* ============================================================================
-   Custom Layout — modern SaaS-style sidebar for Nextcloud 32
+   Custom Layout — modern SaaS-style sidebar for Nextcloud 32–34
    ============================================================================
    This file is loaded globally via \OCP\Util::addStyle(). It re-skins the
    default Nextcloud chrome:
      - hides the horizontal app menu in the top header
      - reserves space on the left for a fixed sidebar (built by layout.js)
      - shifts the main content area to the right of the sidebar
+
+   Layout is driven by a single attribute on <body>:
+     - body[data-cl-mode="expanded"]  full sidebar (260px), content shifted
+     - body[data-cl-mode="rail"]      icon rail (88px), content shifted
+     - body[data-cl-mode="hidden"]    sidebar offscreen, chevron pill only
+     - body.cl-sidebar-peek           transient reveal while in hidden mode
    ========================================================================== */
 
 :root {
@@ -47,7 +53,7 @@
 }
 
 /* Kill the default app menu — but only AFTER our sidebar has cloned its items.
-   NC 32's AppMenu Vue component measures container width on mount; if we hide
+   NC 32+'s AppMenu Vue component measures container width on mount; if we hide
    the nav at that moment Vue thinks there's no room and shoves every entry
    into the overflow popup, leaving the visible <ul> empty. So we wait for
    our JS to set body.cl-applied before hiding. */
@@ -78,14 +84,13 @@ body.cl-applied header .app-menu-main {
    NC 29+ uses `#content-vue` as the outermost content wrapper, positioned
    `fixed; left: 0; width: 100%`. Adding `margin-left` shifts it right but
    the explicit width keeps it full-viewport-wide, so it overflows by
-   exactly the margin amount, and NC's in-app sidebar (e.g. Files
-   navigation) ends up partially clipped behind ours.
+   exactly the margin amount. Correct fix: override `left` directly and pin
+   `right: 0`, so the wrapper genuinely shrinks. We deliberately do NOT
+   touch `.app-content` or `main#content` — those are *inside* `#content-vue`
+   and would get double-shifted.
 
-   Correct fix: override `left` directly and pin `right: 0`, so the wrapper
-   genuinely shrinks. We deliberately do NOT touch `.app-content` or
-   `main#content` — those are *inside* `#content-vue` and would get
-   double-shifted. We also do NOT override any background or border-radius,
-   so NC's theme stays intact. */
+   Default = expanded (matches the pre-JS render so first paint with no
+   data-cl-mode set looks the same as a stored "expanded" preference). */
 
 #content,
 #content-vue {
@@ -96,9 +101,17 @@ body.cl-applied header .app-menu-main {
 	transition: left var(--cl-dur) var(--cl-ease);
 }
 
-body.cl-sidebar-collapsed #content,
-body.cl-sidebar-collapsed #content-vue {
+body[data-cl-mode="rail"] #content,
+body[data-cl-mode="rail"] #content-vue {
 	left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap) + var(--cl-content-gap)) !important;
+}
+
+/* Hidden mode reclaims the full width; peek (transient reveal) overlays
+   instead of pushing the content, so a quick glance doesn't reflow the
+   page beneath it. */
+body[data-cl-mode="hidden"] #content,
+body[data-cl-mode="hidden"] #content-vue {
+	left: 0 !important;
 }
 
 /* ----------------------------------------------------------------------------
@@ -127,8 +140,38 @@ body.cl-sidebar-collapsed #content-vue {
 	color: var(--cl-text);
 }
 
-body.cl-sidebar-collapsed .cl-sidebar {
+body[data-cl-mode="rail"] .cl-sidebar {
 	width: var(--cl-sidebar-w-collapsed);
+}
+
+/* Hidden mode — slide the sidebar offscreen, leaving a 60px sliver wide
+   enough that the chevron pill remains tappable at the screen edge. The
+   sidebar's own background/border/shadow are dropped so only the pill
+   shows against the page. */
+body[data-cl-mode="hidden"] .cl-sidebar {
+	width: var(--cl-sidebar-w-collapsed);
+	transform: translateX(calc(-100% + 60px));
+	background: transparent;
+	border-right: 0;
+	box-shadow: none;
+}
+body[data-cl-mode="hidden"] .cl-sidebar__scroll,
+body[data-cl-mode="hidden"] .cl-sidebar__footer {
+	visibility: hidden;
+}
+
+/* Peek — transient reveal while preference is still "hidden". Slides in,
+   redresses with the normal background/shadow, and the JS auto-closes it
+   when the user taps a link. */
+body[data-cl-mode="hidden"].cl-sidebar-peek .cl-sidebar {
+	transform: translateX(0);
+	background: var(--cl-sidebar-bg);
+	border-right: 1px solid var(--cl-border);
+	box-shadow: var(--cl-shadow);
+}
+body[data-cl-mode="hidden"].cl-sidebar-peek .cl-sidebar__scroll,
+body[data-cl-mode="hidden"].cl-sidebar-peek .cl-sidebar__footer {
+	visibility: visible;
 }
 
 /* ----------------------------------------------------------------------------
@@ -165,8 +208,27 @@ body.cl-sidebar-collapsed .cl-sidebar {
 	width: 16px;
 	height: 16px;
 }
-body.cl-sidebar-collapsed .cl-sidebar__toggle {
+
+/* Rail mode — chevron points "outward" (toward more) since the next click
+   either expands (desktop) or hides (tablet/mobile). */
+body[data-cl-mode="rail"] .cl-sidebar__toggle {
 	transform: rotate(180deg);
+}
+
+/* Hidden + closed — chevron is the only visible part of the sidebar, so
+   give it a self-contained pill style legible against the page. The peek
+   state restores the plain look since the surrounding sidebar is back. */
+body[data-cl-mode="hidden"] .cl-sidebar__toggle {
+	background: var(--cl-sidebar-bg);
+	border: 1px solid var(--cl-border);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	transform: rotate(180deg);
+}
+body[data-cl-mode="hidden"].cl-sidebar-peek .cl-sidebar__toggle {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	transform: none;
 }
 
 /* ----------------------------------------------------------------------------
@@ -182,9 +244,10 @@ body.cl-sidebar-collapsed .cl-sidebar__toggle {
 	scrollbar-color: var(--cl-border) transparent;
 }
 
-/* In collapsed mode the rail is narrow — shrink horizontal scroll padding so
+/* Narrow rails (rail + hidden/peek) — shrink horizontal scroll padding so
    short labels like "Dashboard" fit on a single line under the icon. */
-body.cl-sidebar-collapsed .cl-sidebar__scroll {
+body[data-cl-mode="rail"] .cl-sidebar__scroll,
+body[data-cl-mode="hidden"] .cl-sidebar__scroll {
 	padding-left: 4px;
 	padding-right: 4px;
 }
@@ -215,9 +278,10 @@ body.cl-sidebar-collapsed .cl-sidebar__scroll {
 	transition: opacity var(--cl-dur) var(--cl-ease);
 }
 
-/* Collapsed mode: hide the title entirely — the .cl-group border-top above
-   already provides visual separation between sections, no need to double up. */
-body.cl-sidebar-collapsed .cl-group__title {
+/* Narrow rails — hide titles. The .cl-group border-top already separates
+   sections visually; titles wouldn't fit anyway. */
+body[data-cl-mode="rail"] .cl-group__title,
+body[data-cl-mode="hidden"] .cl-group__title {
 	display: none;
 }
 
@@ -296,11 +360,11 @@ body.cl-sidebar-collapsed .cl-group__title {
 	transition: opacity calc(var(--cl-dur) * 0.8) var(--cl-ease);
 }
 
-/* Collapsed mode — Microsoft Teams-style "icon on top, label below".
-   Items become small tiles, the rail width is enough to fit short labels
-   on one or two lines. No hover-expand: the collapsed rail is the final
-   collapsed state, not a transient one. */
-body.cl-sidebar-collapsed .cl-item {
+/* Narrow rails (rail + hidden/peek) — Microsoft Teams-style "icon on top,
+   label below". Items become small tiles, the rail width is enough to fit
+   short labels on one or two lines. */
+body[data-cl-mode="rail"] .cl-item,
+body[data-cl-mode="hidden"] .cl-item {
 	flex-direction: column;
 	justify-content: center;
 	align-items: stretch;
@@ -309,10 +373,12 @@ body.cl-sidebar-collapsed .cl-item {
 	text-align: center;
 	white-space: normal;
 }
-body.cl-sidebar-collapsed .cl-item__icon {
+body[data-cl-mode="rail"] .cl-item__icon,
+body[data-cl-mode="hidden"] .cl-item__icon {
 	align-self: center;
 }
-body.cl-sidebar-collapsed .cl-item__label {
+body[data-cl-mode="rail"] .cl-item__label,
+body[data-cl-mode="hidden"] .cl-item__label {
 	flex: 0 0 auto;
 	width: 100%;
 	font-size: 11px;
@@ -344,106 +410,32 @@ body.cl-sidebar-collapsed .cl-item__label {
 }
 
 /* ----------------------------------------------------------------------------
-   8. Mobile overlay behavior
-   -------------------------------------------------------------------------- */
+   8. Tablet clamp (≤1024px)
+   --------------------------------------------------------------------------
+   On tablets, "expanded" mode crowds the in-app content. Visually clamp it
+   to the rail layout while keeping the persisted preference intact, so a
+   user who later resizes back to a wide viewport gets their expanded
+   sidebar back automatically. */
 
 @media (max-width: 1024px) {
-	#content,
-	#content-vue {
+	body[data-cl-mode="expanded"] .cl-sidebar {
+		width: var(--cl-sidebar-w-collapsed);
+	}
+	body[data-cl-mode="expanded"] #content,
+	body[data-cl-mode="expanded"] #content-vue {
 		left: calc(var(--cl-sidebar-w-collapsed) + var(--cl-sidebar-gap) + var(--cl-content-gap)) !important;
 	}
-	body:not(.cl-sidebar-collapsed) .cl-sidebar {
-		/* Auto-collapse to the icon+label rail on tablets */
-		width: var(--cl-sidebar-w-collapsed);
-	}
-	body:not(.cl-sidebar-collapsed) .cl-sidebar__scroll {
+	body[data-cl-mode="expanded"] .cl-sidebar__scroll {
 		padding-left: 4px;
 		padding-right: 4px;
 	}
-	body:not(.cl-sidebar-collapsed) .cl-item {
-		flex-direction: column;
-		justify-content: center;
-		align-items: stretch;
-		gap: 4px;
-		padding: 8px 4px;
-		text-align: center;
-		white-space: normal;
-	}
-	body:not(.cl-sidebar-collapsed) .cl-item__icon {
-		align-self: center;
-	}
-	body:not(.cl-sidebar-collapsed) .cl-item__label {
-		flex: 0 0 auto;
-		width: 100%;
-		font-size: 11px;
-		font-weight: 500;
-		line-height: 1.15;
-		text-align: center;
-		white-space: normal;
-		overflow-wrap: anywhere;
-		overflow: hidden;
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-	}
-	body:not(.cl-sidebar-collapsed) .cl-group__title {
-		display: none;
-	}
-}
-
-@media (max-width: 640px) {
-	#content,
-	#content-vue {
-		left: 0 !important;
-	}
-	.cl-sidebar {
-		left: 0;
-		top: var(--cl-header-h);
-		bottom: 0;
-		width: var(--cl-sidebar-w-collapsed);
-		border-radius: 0;
-		border-left: 0;
-		/* When closed, slide off-screen leaving a sliver wide enough for the
-		   toggle bar's chevron to remain tappable at the screen edge. */
-		transform: translateX(calc(-100% + 60px));
-		transition: transform 0.2s ease;
-		z-index: 1001;
-	}
-	body.cl-sidebar-mobile-open .cl-sidebar {
-		transform: translateX(0);
-	}
-
-	/* When the drawer is closed, hide the sidebar's chrome (background, border,
-	   shadow) and the scroll/footer content — only the chevron pill remains
-	   visible against the page. */
-	body:not(.cl-sidebar-mobile-open) .cl-sidebar {
-		background: transparent;
-		border-right: 0;
-		box-shadow: none;
-	}
-	body:not(.cl-sidebar-mobile-open) .cl-sidebar__scroll,
-	body:not(.cl-sidebar-mobile-open) .cl-sidebar__footer {
-		visibility: hidden;
-	}
-	/* Make the chevron a self-contained pill so it's legible against the page
-	   without the surrounding sidebar background. */
-	body:not(.cl-sidebar-mobile-open) .cl-sidebar__toggle {
-		background: var(--cl-sidebar-bg);
-		border: 1px solid var(--cl-border);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	body[data-cl-mode="expanded"] .cl-sidebar__toggle {
 		transform: rotate(180deg);
 	}
-	body.cl-sidebar-mobile-open .cl-sidebar__toggle {
-		transform: none;
+	body[data-cl-mode="expanded"] .cl-group__title {
+		display: none;
 	}
-
-	/* Mobile drawer uses the Teams-style icon-over-label rail, same as the
-	   tablet breakpoint. */
-	.cl-sidebar__scroll {
-		padding-left: 4px;
-		padding-right: 4px;
-	}
-	.cl-item {
+	body[data-cl-mode="expanded"] .cl-item {
 		flex-direction: column;
 		justify-content: center;
 		align-items: stretch;
@@ -452,10 +444,10 @@ body.cl-sidebar-collapsed .cl-item__label {
 		text-align: center;
 		white-space: normal;
 	}
-	.cl-item__icon {
+	body[data-cl-mode="expanded"] .cl-item__icon {
 		align-self: center;
 	}
-	.cl-item__label {
+	body[data-cl-mode="expanded"] .cl-item__label {
 		flex: 0 0 auto;
 		width: 100%;
 		font-size: 11px;
@@ -468,14 +460,25 @@ body.cl-sidebar-collapsed .cl-item__label {
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
-	}
-	.cl-group__title {
-		display: none;
 	}
 }
 
 /* ----------------------------------------------------------------------------
-   9. Dark mode — follow Nextcloud's chosen theme, NOT the OS preference
+   9. Mobile aesthetic (≤640px)
+   --------------------------------------------------------------------------
+   The mode rules above already do the heavy lifting on phones — these are
+   just full-bleed tweaks: drop the rounded right edge and the bottom gap
+   so the sidebar/drawer reads as a flush panel rather than a floating card. */
+
+@media (max-width: 640px) {
+	.cl-sidebar {
+		bottom: 0;
+		border-radius: 0;
+	}
+}
+
+/* ----------------------------------------------------------------------------
+   10. Dark mode — follow Nextcloud's chosen theme, NOT the OS preference
    --------------------------------------------------------------------------
    We deliberately do NOT use `@media (prefers-color-scheme: dark)` here:
    that would dark-ify our sidebar whenever the user's OS is dark, even when

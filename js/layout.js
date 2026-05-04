@@ -58,7 +58,18 @@
     },
   ];
 
-  const STORAGE_KEY = "cl:sidebar:collapsed";
+  const STORAGE_KEY = "cl:sidebar:mode";
+  const LEGACY_STORAGE_KEY = "cl:sidebar:collapsed";
+
+  const MODE_HIDDEN = "hidden";
+  const MODE_RAIL = "rail";
+  const MODE_EXPANDED = "expanded";
+  const VALID_MODES = [MODE_HIDDEN, MODE_RAIL, MODE_EXPANDED];
+
+  // Module state: persisted preference + transient peek flag (peek is the
+  // auto-closing reveal that happens while the persisted mode is "hidden").
+  let currentMode = MODE_RAIL;
+  let isPeeking = false;
 
   const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -240,7 +251,7 @@
     toggleBtn.className = "cl-sidebar__toggle";
     toggleBtn.setAttribute("aria-label", "Toggle sidebar");
     toggleBtn.appendChild(makeChevronSvg());
-    toggleBtn.addEventListener("click", toggleCollapsed);
+    toggleBtn.addEventListener("click", onToggleClick);
     toggleBar.appendChild(toggleBtn);
 
     scrollEl = document.createElement("div");
@@ -255,13 +266,14 @@
 
     document.body.appendChild(sidebarEl);
 
-    // Auto-close mobile drawer after tapping an app link.
+    // Auto-close the transient peek reveal after tapping an app link, so a
+    // user in "hidden" mode can glance at the menu, navigate, and end up
+    // with the sidebar tucked away again. Pinned modes (rail/expanded)
+    // stay put — taps there do not change state.
     sidebarEl.addEventListener("click", (e) => {
-      if (
-        e.target.closest(".cl-item") &&
-        document.body.classList.contains("cl-sidebar-mobile-open")
-      ) {
-        document.body.classList.remove("cl-sidebar-mobile-open");
+      if (e.target.closest(".cl-item") && isPeeking) {
+        isPeeking = false;
+        applyState();
       }
     });
   }
@@ -421,38 +433,103 @@
     return true;
   }
 
-  // --- Collapsed state ------------------------------------------------------
+  // --- Sidebar state machine ------------------------------------------------
+  //
+  // Three persisted modes (the user's preference):
+  //   - "hidden":   sidebar tucked off-screen, only the chevron pill remains.
+  //   - "rail":     icon-only rail visible (88px), pinned.
+  //   - "expanded": full sidebar visible (260px), pinned.
+  //
+  // Plus one transient flag: `isPeeking`. While the persisted mode is
+  // "hidden", the user can tap the chevron pill to slide the rail in for a
+  // glance; tapping a link auto-closes back to hidden. Peek is never
+  // persisted.
+  //
+  // The chevron cycles modes:
+  //   - desktop (>1024px): hidden → rail → expanded → hidden
+  //   - tablet/mobile (<=1024px): hidden → rail → hidden
+  //     (expanded is skipped; on those viewports the CSS clamps "expanded"
+  //     to look like "rail" anyway, so the cycle would feel like a no-op.)
 
-  function applyCollapsedFromStorage() {
-    let collapsed = false;
+  function isWideViewport() {
+    return !window.matchMedia("(max-width: 1024px)").matches;
+  }
+
+  function applyState() {
+    document.body.dataset.clMode = currentMode;
+    document.body.classList.toggle(
+      "cl-sidebar-peek",
+      isPeeking && currentMode === MODE_HIDDEN,
+    );
+  }
+
+  function persistMode() {
     try {
-      collapsed = localStorage.getItem(STORAGE_KEY) === "1";
+      localStorage.setItem(STORAGE_KEY, currentMode);
     } catch (_) {
       /* private mode etc. — ignore */
     }
-    document.body.classList.toggle("cl-sidebar-collapsed", collapsed);
   }
 
-  function toggleCollapsed() {
-    // On mobile (<=640px), the chevron opens/closes the drawer instead of
-    // toggling the desktop collapsed/expanded state.
-    if (window.matchMedia("(max-width: 640px)").matches) {
-      document.body.classList.toggle("cl-sidebar-mobile-open");
-      return;
-    }
-    const next = !document.body.classList.contains("cl-sidebar-collapsed");
-    document.body.classList.toggle("cl-sidebar-collapsed", next);
+  function loadStateFromStorage() {
+    let mode = MODE_RAIL;
     try {
-      localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (VALID_MODES.indexOf(stored) !== -1) {
+        mode = stored;
+      } else {
+        // One-time migration of the old boolean flag from the
+        // collapsed/expanded era.
+        const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacy === "1") mode = MODE_RAIL;
+        else if (legacy === "0") mode = MODE_EXPANDED;
+        if (legacy !== null) {
+          localStorage.setItem(STORAGE_KEY, mode);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+      }
     } catch (_) {
       /* ignore */
     }
+    currentMode = mode;
+    isPeeking = false;
+    applyState();
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    isPeeking = false;
+    persistMode();
+    applyState();
+  }
+
+  function onToggleClick() {
+    if (currentMode === MODE_HIDDEN) {
+      if (isPeeking) {
+        // Peek → commit to pinned rail. The user has signalled "yes,
+        // keep it visible".
+        setMode(MODE_RAIL);
+      } else {
+        // First tap from hidden → transient reveal. Preference stays
+        // "hidden" so a link tap (or another chevron press) returns to
+        // the tucked-away state.
+        isPeeking = true;
+        applyState();
+      }
+      return;
+    }
+    if (currentMode === MODE_RAIL) {
+      setMode(isWideViewport() ? MODE_EXPANDED : MODE_HIDDEN);
+      return;
+    }
+    // currentMode === MODE_EXPANDED
+    setMode(MODE_HIDDEN);
   }
 
   // --- Bootstrap ------------------------------------------------------------
 
   function start() {
-    applyCollapsedFromStorage();
+    loadStateFromStorage();
     rebuildSidebar();
 
     const observer = new MutationObserver(() => {

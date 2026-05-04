@@ -17,3 +17,5 @@ Thumbs.db
 *~
 
 *.png
+*.md
+.playwright-mcp/
