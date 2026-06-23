@@ -108,6 +108,60 @@
     return [];
   }
 
+  /**
+   * Build a detached <a> from a Nextcloud navigation entry so the rest of
+   * the build path (getAppId/getAppLabel/buildIconNode/isActive) works on
+   * it exactly as it does on a cloned menu anchor.
+   */
+  function synthAnchor(entry) {
+    const a = document.createElement("a");
+    a.setAttribute("href", entry.href || "#");
+    const slug = entry.app || entry.id || "";
+    if (slug) a.setAttribute("data-app-id", slug);
+    if (entry.name) a.setAttribute("aria-label", entry.name);
+    if (entry.active) a.setAttribute("aria-current", "page");
+    if (entry.target) a.setAttribute("target", "_blank");
+    if (entry.icon) {
+      const img = document.createElement("img");
+      img.setAttribute("src", entry.icon);
+      img.setAttribute("alt", "");
+      img.setAttribute("aria-hidden", "true");
+      a.appendChild(img);
+    }
+    return a;
+  }
+
+  /**
+   * Read the *complete* app list from Nextcloud's initial state
+   * (`#initial-state-core-apps`, base64-encoded JSON — the same source
+   * NC's own Vue AppMenu reads via loadState('core', 'apps')).
+   *
+   * This is the authoritative, viewport-independent list. The rendered DOM
+   * menu can't be trusted as the source: on a narrow viewport AppMenu
+   * measures a tiny container width and pushes all but the first app
+   * (Dashboard) into an <NcActions> overflow popover that is never in the
+   * DOM for us to clone — which is why mobile used to show Dashboard only.
+   *
+   * Returns synthetic <a> nodes, or null when the initial state is
+   * unavailable (older NC, or not yet injected) so the caller falls back
+   * to the DOM selector cascade.
+   */
+  function findAppLinksFromInitialState() {
+    const el = document.getElementById("initial-state-core-apps");
+    if (!el || !el.value) return null;
+    let entries;
+    try {
+      entries = JSON.parse(atob(el.value));
+    } catch (e) {
+      return null;
+    }
+    if (!Array.isArray(entries) || entries.length === 0) return null;
+    return entries
+      .filter((e) => e && e.href)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(synthAnchor);
+  }
+
   function findMoreAppsLink() {
     for (const sel of MORE_APPS_SELECTORS) {
       const link = $(sel);
@@ -389,7 +443,9 @@
   }
 
   function rebuildSidebar() {
-    const links = findAppLinks();
+    // Prefer the complete initial-state list (all apps, any viewport);
+    // fall back to cloning the rendered menu on older NC.
+    const links = findAppLinksFromInitialState() || findAppLinks();
     if (links.length === 0) return false;
 
     ensureSidebarShell();
