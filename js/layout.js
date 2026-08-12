@@ -162,6 +162,25 @@
       .map(synthAnchor);
   }
 
+  /**
+   * App ids the administrator has hidden, from our own initial state.
+   * Read once at start() — the value cannot change without a page reload.
+   */
+  let hiddenAppIds = [];
+
+  function readHiddenApps() {
+    const el = document.getElementById(
+      "initial-state-custom_layout-hidden_apps",
+    );
+    if (!el || !el.value) return [];
+    try {
+      const parsed = JSON.parse(atob(el.value));
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   function findMoreAppsLink() {
     for (const sel of MORE_APPS_SELECTORS) {
       const link = $(sel);
@@ -445,8 +464,15 @@
   function rebuildSidebar() {
     // Prefer the complete initial-state list (all apps, any viewport);
     // fall back to cloning the rendered menu on older NC.
-    const links = findAppLinksFromInitialState() || findAppLinks();
-    if (links.length === 0) return false;
+    const allLinks = findAppLinksFromInitialState() || findAppLinks();
+    // An empty *unfiltered* list means Nextcloud's menu is not ready yet; an
+    // empty filtered list is a legitimate all-hidden sidebar, so the bail-out
+    // has to test the unfiltered one.
+    if (allLinks.length === 0) return false;
+
+    const links = hiddenAppIds.length
+      ? allLinks.filter((l) => hiddenAppIds.indexOf(getAppId(l)) === -1)
+      : allLinks;
 
     ensureSidebarShell();
 
@@ -581,6 +607,7 @@
 
   function start() {
     loadStateFromStorage();
+    hiddenAppIds = readHiddenApps();
     rebuildSidebar();
 
     const observer = new MutationObserver(() => {
