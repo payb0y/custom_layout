@@ -18,4 +18,6 @@ Thumbs.db
 
 *.png
 *.md
+# ...except design specs, which are meant to be tracked.
+!docs/**/*.md
 .playwright-mcp/

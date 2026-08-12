@@ -15,16 +15,19 @@ Features:
 - Responsive (auto-collapse on small screens)
 - Non-invasive: pure CSS + JS overlay, no core file changes
 
-Compatible with Nextcloud 32.x.
+Compatible with Nextcloud 29–34.
 	]]></description>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 	<licence>agpl</licence>
 	<author mail="othmanegat@gmail.com">Custom Layout</author>
 	<namespace>CustomLayout</namespace>
 	<category>customization</category>
 	<bugs>https://example.com/custom_layout/issues</bugs>
+	<settings>
+		<admin-section>OCA\CustomLayout\Settings\AdminSection</admin-section>
+	</settings>
 	<dependencies>
 		<php min-version="8.0"/>
-		<nextcloud min-version="25" max-version="34"/>
+		<nextcloud min-version="29" max-version="34"/>
 	</dependencies>
 </info>
