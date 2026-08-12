@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\CustomLayout\AppInfo;
 
 use OCA\CustomLayout\Listener\BeforeTemplateRenderedListener;
+use OCA\CustomLayout\Settings\HiddenAppsForm;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -24,6 +25,8 @@ class Application extends App implements IBootstrap {
 			BeforeTemplateRenderedEvent::class,
 			BeforeTemplateRenderedListener::class
 		);
+
+		$context->registerDeclarativeSettings(HiddenAppsForm::class);
 	}
 
 	public function boot(IBootContext $context): void {

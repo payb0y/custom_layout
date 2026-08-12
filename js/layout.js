@@ -1,5 +1,5 @@
 /**
- * Custom Layout — modern SaaS-style sidebar for Nextcloud 32.
+ * Custom Layout — modern SaaS-style sidebar for Nextcloud 29–34.
  *
  * Strategy:
  *   1. Wait for DOM ready.
