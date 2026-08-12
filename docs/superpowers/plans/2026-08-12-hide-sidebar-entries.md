@@ -960,3 +960,51 @@ git commit -m "feat: block hidden apps' pages while leaving their APIs live"
 **Known wart, not fixed here:** `package.json` is gitignored per CLAUDE.md, so a fresh clone gets the committed specs without the dependency that runs them. Re-add it with `npm i -D @playwright/test`. Fixing that properly means revisiting the repo's gitignore policy, which is outside this feature.
 
 **Type consistency.** `HiddenApps::CONFIG_KEY` (`'hidden_apps'`) is used as the appconfig key, the initial-state key, and the field id — which is what makes the DOM id `initial-state-custom_layout-hidden_apps` and the checkbox ids `hidden_apps_field_<appId>` line up. `getHiddenAppIds(): list<string>` is consumed identically by the listener (Task 2) and the middleware (Task 4).
+
+---
+
+## Execution notes
+
+Recorded after the plan was executed. Where this section and the tasks above
+disagree, this section is what was actually built.
+
+**The middleware takes no `IL10N`.** Task 4 called for injecting it. A *global*
+middleware is constructed inside whichever app's container is handling the
+request, so `IL10N` would have resolved to that app's translation domain rather
+than ours — and this app ships no `l10n/` directory, so it bought nothing. The
+403 message is a plain string.
+
+**Test subject moved from `projectcreatoraio` to core `files`.** Both in-house
+apps the plan named have pre-existing broken dependencies on this instance and
+return 500 on every API route regardless of this feature:
+
+- `projectcreatoraio` — `ProjectApiController` requires `OCA\Deck\Service\BoardService`; the Deck app is not installed.
+- `adminpage` — `DashboardController` requires `OCA\Organization\Service\UserQuotaService`; that class does not exist.
+
+Core `files` is a stricter subject anyway: `view#index` (`TemplateResponse`) and
+`Api#getStorageStats` (`DataResponse`) live in the same app behind the same entry
+script, so response type is the *only* difference between the blocked and the
+allowed request.
+
+**Calling that JSON route needs a CSRF token.** `Api#getStorageStats` is an
+internal AJAX route, so it answers 412 to any cookie-bearing request without a
+`requesttoken` header — including a Basic-auth call made through Playwright's
+`page.request`, which shares the browser cookie jar. The test sends the session
+plus `window.OC.requestToken`. The WebDAV test covers the cookie-less external
+caller instead, via Basic auth on `remote.php`.
+
+**`occ` helpers use `execFileSync` with an argument array**, not a shell string
+as sketched in Task 1 — a JSON value interpolated into a single-quoted shell
+string breaks on any embedded quote.
+
+**The version bump needs an upgrade cycle.** Moving `<version>` to 1.1.0 put the
+server into "requires upgrade" state mid-`app:enable`. `occ upgrade` settles it
+(`needsDbUpgrade: false` afterwards).
+
+**A fourth compatibility declaration existed.** Beyond `info.xml`'s
+`<nextcloud>` element and the two comment headers CLAUDE.md names, the
+user-visible `<description>` in `info.xml` also carried a version ("Compatible
+with Nextcloud 32.x."). All four now read 29–34.
+
+**Final state:** 9 Playwright tests passing; the default-app trap manually
+confirmed to behave as the spec documents.
