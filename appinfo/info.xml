@@ -17,7 +17,7 @@ Features:
 
 Compatible with Nextcloud 29–34.
 	]]></description>
-	<version>1.1.0</version>
+	<version>1.2.0</version>
 	<licence>agpl</licence>
 	<author mail="othmanegat@gmail.com">Custom Layout</author>
 	<namespace>CustomLayout</namespace>

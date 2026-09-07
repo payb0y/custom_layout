@@ -29,7 +29,7 @@ class HiddenApps {
 	 * App ids the administrator has hidden.
 	 *
 	 * Fails open: absent, malformed, or unexpected JSON yields an empty list,
-	 * because a corrupt config value must never 403 every app at once.
+	 * because a corrupt config value must never blank the sidebar for everyone.
 	 *
 	 * @return list<string>
 	 */
