@@ -4,6 +4,8 @@
 
 **Goal:** Let a superadmin hide apps from the Custom Layout sidebar, with hidden apps' pages returning 403 while their APIs keep serving.
 
+> **Amended 2026-09-07:** the 403 half was dropped — hiding removes an app from the sidebar only, and its pages stay reachable by URL. Tasks below that build `HiddenAppMiddleware` no longer reflect the shipped code.
+
 **Architecture:** A Nextcloud declarative settings form writes a JSON object of hidden app ids to appconfig. One small service owns that key. A render listener pushes the list into the page as initial state for `layout.js` to filter on, and a globally-registered middleware swaps any `TemplateResponse` for a hidden app with a 403 — leaving JSON, OCS and DAV responses untouched.
 
 **Tech Stack:** PHP 8.0+, Nextcloud 29–34 server APIs, vanilla ES5-style JS (no bundler), Playwright for verification.

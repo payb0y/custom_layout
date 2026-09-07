@@ -4,6 +4,11 @@
 **Date:** 2026-08-12
 **App:** `custom_layout` (`OCA\CustomLayout`)
 
+> **Amended 2026-09-07 — hiding is now sidebar-only.** The "page blocked, APIs
+> live" requirement below was dropped: hidden apps stay fully reachable by
+> direct URL. `HiddenAppMiddleware` and its global registration were removed;
+> everything else in this document still describes the shipped code.
+
 ## Problem
 
 There is no way to remove an app from the Custom Layout sidebar. The sidebar is

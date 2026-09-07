@@ -32,7 +32,7 @@ class HiddenAppsForm implements IDeclarativeSettingsForm {
 			'section_id' => Application::APP_ID,
 			'storage_type' => DeclarativeSettingsTypes::STORAGE_TYPE_INTERNAL,
 			'title' => $this->l->t('Sidebar visibility'),
-			'description' => $this->l->t('Choose which apps appear in the Custom Layout sidebar. Hidden apps are removed from the sidebar for everyone and their pages return 403 — their APIs keep working.'),
+			'description' => $this->l->t('Choose which apps appear in the Custom Layout sidebar. Hidden apps are removed from the sidebar for everyone, but stay fully reachable by direct URL.'),
 			'fields' => [
 				[
 					'id' => HiddenApps::CONFIG_KEY,
@@ -53,9 +53,8 @@ class HiddenAppsForm implements IDeclarativeSettingsForm {
 	/**
 	 * Every app with a navigation entry, as {name, value} pairs.
 	 *
-	 * TYPE_APPS deliberately excludes TYPE_SETTINGS, so Settings can never be
-	 * offered as a hideable target — which is what keeps the un-hide route
-	 * reachable given there is no protected-app list.
+	 * TYPE_APPS deliberately excludes TYPE_SETTINGS, so Settings is never
+	 * offered as a hideable target.
 	 *
 	 * @return list<array{name: string, value: string}>
 	 */
